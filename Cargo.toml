@@ -1,0 +1,14 @@
+[package]
+name = "voicechange-rust-win"
+version = "0.2.1"
+authors = ["Saba Motto <sabapotcom@yahoo.co.jp>"]
+edition = "2018"
+
+[dependencies]
+vst = "^0.2.1"
+rand = "^0.8.2"
+Rust-WORLD = {git = "https://github.com/sabamotto/Rust-WORLD.git", branch = "feature/update-world"}
+
+[lib]
+name = "voicechanger"
+crate-type = ["cdylib"]
