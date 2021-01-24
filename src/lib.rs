@@ -70,6 +70,7 @@ impl VoiceChange {
     fn stream_process(&mut self, samples: usize, input: Vec<f64>) -> Vec<f64> {
         // Fetch parameters
         let f0_rate = self.params.get_f0_rate();
+        let f0_sqr_rate = self.params.get_f0_exp();
         let sp_rate = self.params.get_sp_rate();
         let pitch_freq = if self.notes == 0 {
             0.0
@@ -106,11 +107,15 @@ impl VoiceChange {
         // self.params.debug.set((f0[0] * 0.0001) as f32);
 
         // change voice here!
+        let mut last_freq = 100.0;
         for fi in f0.iter_mut() {
             *fi = if self.notes > 0 {
                 pitch_freq
             } else {
-                *fi * f0_rate
+                if *fi > 100.0 {
+                    last_freq = ((*fi - 100.0).powf(f0_sqr_rate) + 100.0) * f0_rate;
+                }
+                last_freq
             };
         }
 
@@ -161,7 +166,7 @@ struct VoiceChangeParameters {
     gain: vst::util::AtomicFloat,
     f0_rate: vst::util::AtomicFloat,
     sp_rate: vst::util::AtomicFloat,
-    debug: vst::util::AtomicFloat,
+    f0_exp: vst::util::AtomicFloat,
 }
 
 impl VoiceChangeParameters {
@@ -171,6 +176,9 @@ impl VoiceChangeParameters {
     fn get_sp_rate(&self) -> f64 {
         (0.75 + self.sp_rate.get()) as f64
     }
+    fn get_f0_exp(&self) -> f64 {
+        (0.4 * self.f0_exp.get() + 0.8) as f64
+    }
 }
 
 impl Default for VoiceChangeParameters {
@@ -179,7 +187,7 @@ impl Default for VoiceChangeParameters {
             gain: vst::util::AtomicFloat::new(1.0),
             f0_rate: vst::util::AtomicFloat::new(0.5),
             sp_rate: vst::util::AtomicFloat::new(0.25),
-            debug: vst::util::AtomicFloat::new(0.0),
+            f0_exp: vst::util::AtomicFloat::new(0.5),
         }
     }
 }
@@ -198,7 +206,7 @@ impl PluginParameters for VoiceChangeParameters {
             0 => format!("{:.3}", self.gain.get()),
             1 => format!("{:.3}", self.get_f0_rate()),
             2 => format!("{:.3}", self.get_sp_rate()),
-            3 => format!("{:.3}", self.debug.get() * 10000.0),
+            3 => format!("{:.3}", self.get_f0_exp()),
             _ => format!(""),
         }
     }
@@ -207,7 +215,7 @@ impl PluginParameters for VoiceChangeParameters {
             0 => "Gain".to_string(),
             1 => "Pitch Rate".to_string(),
             2 => "Formant Rate".to_string(),
-            3 => "DEBUG".to_string(),
+            3 => "Intonation".to_string(),
             _ => "".to_string(),
         }
     }
@@ -216,7 +224,7 @@ impl PluginParameters for VoiceChangeParameters {
             0 => self.gain.get(),
             1 => self.f0_rate.get(),
             2 => self.sp_rate.get(),
-            3 => self.debug.get(),
+            3 => self.f0_exp.get(),
             _ => 0.0,
         }
     }
@@ -225,7 +233,7 @@ impl PluginParameters for VoiceChangeParameters {
             0 => self.gain.set(value),
             1 => self.f0_rate.set(value),
             2 => self.sp_rate.set(value),
-            3 => self.debug.set(value),
+            3 => self.f0_exp.set(value),
             _ => (),
         }
     }
