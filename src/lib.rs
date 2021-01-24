@@ -15,6 +15,7 @@ use Rust_WORLD::rsworld::{cheaptrick, d4c, dio, stonemask, synthesis};
 use Rust_WORLD::rsworld_sys::{CheapTrickOption, D4COption, DioOption};
 
 const BUFFER_SIZE: usize = 1024 * 8;
+const COMPOSE_SIZE: usize = 256;
 
 // for note input
 pub const TAU: f64 = PI * 2.0;
@@ -26,13 +27,26 @@ fn midi_pitch_to_freq(pitch: u8) -> f64 {
     ((f64::from(pitch as i8 - A4_PITCH)) / 12.).exp2() * A4_FREQ
 }
 
-#[derive(Default)]
 struct VoiceChange {
     sample_rate: i32,
     params: Arc<VoiceChangeParameters>,
-    buffer: VecDeque<f64>,
+    source_buffer: VecDeque<f64>,
+    compose_buffer: Vec<f64>,
     notes: u8,
     pitch: u8,
+}
+
+impl Default for VoiceChange {
+    fn default() -> Self {
+        Self {
+            sample_rate: 44100,
+            params: Arc::new(VoiceChangeParameters::default()),
+            source_buffer: VecDeque::default(),
+            compose_buffer: vec![0f64; COMPOSE_SIZE],
+            notes: 0,
+            pitch: 0,
+        }
+    }
 }
 
 impl VoiceChange {
@@ -64,7 +78,7 @@ impl VoiceChange {
         };
 
         // Buffering
-        let mut buffer = self.buffer.clone();
+        let mut buffer = self.source_buffer.clone();
         if buffer.capacity() < BUFFER_SIZE + samples {
             buffer.reserve(BUFFER_SIZE + samples - buffer.capacity());
             buffer.resize(BUFFER_SIZE, 0f64);
@@ -74,12 +88,13 @@ impl VoiceChange {
         if buffer_size > BUFFER_SIZE {
             buffer.drain(0..buffer_size - BUFFER_SIZE);
         }
-        let last_idx = buffer.len() - samples;
+        let compose_idx = buffer.len() - COMPOSE_SIZE;
+        let dest_idx = compose_idx - samples;
         // self.buffer.replace(buffer);
-        self.buffer = buffer;
+        self.source_buffer = buffer;
 
         // Analyze voice features
-        let x: Vec<f64> = self.buffer.iter().cloned().collect();
+        let x: Vec<f64> = self.source_buffer.iter().cloned().collect();
         let dio_option = DioOption::new();
         let (tpos, f0) = dio(&x, self.sample_rate, &dio_option);
         let mut f0 = stonemask(&x, self.sample_rate, &tpos, &f0);
@@ -105,7 +120,7 @@ impl VoiceChange {
                 let sp_range = (frm.len() as f64 * sp_rate).floor() as usize;
                 frm.iter()
                     .enumerate()
-                    .map(|(f, elem)| {
+                    .map(|(f, elem)| -> f64 {
                         if f < sp_range {
                             if sp_rate >= 1.0 {
                                 frm[(f as f64 / sp_rate) as usize]
@@ -122,7 +137,22 @@ impl VoiceChange {
 
         // synthesize voice
         let out = synthesis(&f0, &sp2, &ap, dio_option.frame_period, self.sample_rate);
-        return (&out[last_idx..out.len()]).to_vec();
+        let dest: Vec<f64> = out[dest_idx..compose_idx]
+            .iter()
+            .enumerate()
+            .map(|(i, y)| -> f64 {
+                if i < COMPOSE_SIZE {
+                    let ratio = i as f64 / COMPOSE_SIZE as f64;
+                    let prev_y = (1.0f64 - ratio) * self.compose_buffer[i];
+                    let curr_y = ratio * *y;
+                    return prev_y + curr_y;
+                } else {
+                    return *y;
+                }
+            })
+            .collect();
+        self.compose_buffer = out[compose_idx..out.len()].iter().cloned().collect();
+        return dest;
     }
 }
 
@@ -207,7 +237,7 @@ impl Plugin for VoiceChange {
             name: "Voice Changer".to_string(),
             vendor: "sabamotto".to_string(),
             unique_id: 0x300001,
-            version: 100,
+            version: 101,
             category: Category::Effect,
 
             parameters: 4,
