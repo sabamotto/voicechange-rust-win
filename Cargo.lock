@@ -3,7 +3,7 @@
 [[package]]
 name = "Rust-WORLD"
 version = "0.1.2"
-source = "git+https://github.com/sabamotto/Rust-WORLD.git?branch=feature/update-world#34cda89bdff73b2c1217fafda5c798316554ad5f"
+source = "git+https://github.com/sabamotto/Rust-WORLD.git?branch=feature/update-world#fb92a557609229729569a909c574a0446bcdec39"
 dependencies = [
  "rsworld",
  "rsworld-sys",
@@ -26,6 +26,9 @@ name = "cc"
 version = "1.0.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c0496836a84f8d0495758516b8621a622beb77c0fed418570e50764093ced48"
+dependencies = [
+ "jobserver",
+]
 
 [[package]]
 name = "cfg-if"
@@ -48,6 +51,15 @@ dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "wasi",
+]
+
+[[package]]
+name = "jobserver"
+version = "0.1.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c71313ebb9439f74b00d9d2dcec36440beaf57a6aa0623068441dd7cd81a7f2"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -133,7 +145,7 @@ dependencies = [
 [[package]]
 name = "rsworld"
 version = "0.1.1"
-source = "git+https://github.com/sabamotto/Rust-WORLD.git?branch=feature/update-world#34cda89bdff73b2c1217fafda5c798316554ad5f"
+source = "git+https://github.com/sabamotto/Rust-WORLD.git?branch=feature/update-world#fb92a557609229729569a909c574a0446bcdec39"
 dependencies = [
  "rsworld-sys",
 ]
@@ -141,7 +153,7 @@ dependencies = [
 [[package]]
 name = "rsworld-sys"
 version = "0.1.1"
-source = "git+https://github.com/sabamotto/Rust-WORLD.git?branch=feature/update-world#34cda89bdff73b2c1217fafda5c798316554ad5f"
+source = "git+https://github.com/sabamotto/Rust-WORLD.git?branch=feature/update-world#fb92a557609229729569a909c574a0446bcdec39"
 dependencies = [
  "cc",
 ]
