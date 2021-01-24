@@ -9,59 +9,64 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
   build:
+    name: Build and Upload zip
+    needs: release
     strategy:
       matrix:
         os: [windows-latest, macOS-latest]
         rust: [stable]
-
     runs-on: ${{ matrix.os }}
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --release --verbose
-    - name: Packaging - Windows
-      if: matrix.os == 'windows-latest'
-      run: |
-        mkdir release
-        mv target/release/voicechanger.dll release/
-        powershell Compress-Archive -Path release -DestinationPath voicechanger-win-x86_64.zip
-    - name: Packaging - macOS
-      if: matrix.os == 'macOS-latest'
-      run: |
-        mkdir -p release/voicechanger.vst/Contents/MacOS
-        mv target/release/libvoicechanger.dylib release/voicechanger.vst/Contents/MacOS/
-        zip -9 -r voicechanger-macos-x86_64.zip release
-    - name: Create release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-    - name: Upload release asset - Windows
-      if: matrix.os == 'windows-latest'
-      id: upload_release_win
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: voicechanger-win-x86_64.zip
-        asset_name: voicechanger-win-x86_64.zip
-        asset_content_type: application/zip
-    - name: Upload release asset - macOS
-      if: matrix.os == 'macOS-latest'
-      id: upload_release_macos
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: voicechanger-macos-x86_64.zip
-        asset_name: voicechanger-macos-x86_64.zip
-        asset_content_type: application/zip
+      - uses: actions/checkout@v2
+      - name: Build
+        run: cargo build --release --verbose
+      - name: Packaging - Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir release
+          mv target/release/voicechanger.dll release/
+          powershell Compress-Archive -Path release -DestinationPath voicechanger-win-x86_64.zip
+      - name: Packaging - macOS
+        if: matrix.os == 'macOS-latest'
+        run: |
+          mkdir -p release/voicechanger.vst/Contents/MacOS
+          mv target/release/libvoicechanger.dylib release/voicechanger.vst/Contents/MacOS/
+          zip -9 -r voicechanger-macos-x86_64.zip release
+      - name: Upload release asset - Windows
+        if: matrix.os == 'windows-latest'
+        id: upload_release_win
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: voicechanger-win-x86_64.zip
+          asset_name: voicechanger-win-x86_64.zip
+          asset_content_type: application/zip
+      - name: Upload release asset - macOS
+        if: matrix.os == 'macOS-latest'
+        id: upload_release_macos
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: voicechanger-macos-x86_64.zip
+          asset_name: voicechanger-macos-x86_64.zip
+          asset_content_type: application/zip
