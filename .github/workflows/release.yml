@@ -26,7 +26,7 @@ jobs:
       run: |
         mkdir release
         mv target/release/voicechanger.dll release/
-        zip -9 -r voicechanger-win-x86_64.zip release
+        powershell Compress-Archive -Path release -DestinationPath voicechanger-win-x86_64.zip
     - name: Package for macOS
       if: matrix.os == 'macOS-latest'
       run: |
