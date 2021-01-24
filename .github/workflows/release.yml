@@ -31,7 +31,7 @@ jobs:
       if: matrix.os == 'macOS-latest'
       run: |
         mkdir -p release/voicechanger.vst/Contents/MacOS
-        mv target/release/voicechanger.dylib release/voicechanger.vst/Contents/MacOS/
+        mv target/release/libvoicechanger.dylib release/voicechanger.vst/Contents/MacOS/
         zip -9 -r voicechanger-macos-x86_64.zip release
     - name: Create Release
       uses: softprops/action-gh-release@v1
