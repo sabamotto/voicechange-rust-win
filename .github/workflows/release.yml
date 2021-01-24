@@ -34,7 +34,7 @@ jobs:
         mv target/release/libvoicechanger.dylib release/voicechanger.vst/Contents/MacOS/
         zip -9 -r voicechanger-macos-x86_64.zip release
     - name: Create release
-      id: create_github_release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,22 +44,22 @@ jobs:
         draft: false
         prerelease: false
     - name: Upload release asset - Windows
-      id: upload_github_release_win
+      id: upload_release_win
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ step.create_release.outputs.upload_url }}
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: voicechanger-win-x86_64.zip
         asset_name: voicechanger-win-x86_64.zip
         asset_content_type: application/zip
     - name: Upload release asset - macOS
-      id: upload_github_release_macos
+      id: upload_release_macos
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ step.create_release.outputs.upload_url }}
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: voicechanger-macos-x86_64.zip
         asset_name: voicechanger-macos-x86_64.zip
         asset_content_type: application/zip
