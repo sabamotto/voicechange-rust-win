@@ -27,7 +27,7 @@ jobs:
         mkdir release
         mv target/release/voicechanger.dll release/
         zip -9 -r voicechanger-win-x86_64.zip release
-    - name: Package for Windows
+    - name: Package for macOS
       if: matrix.os == 'macOS-latest'
       run: |
         mkdir -p release/voicechanger.vst/Contents/MacOS
