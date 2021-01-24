@@ -44,6 +44,7 @@ jobs:
         draft: false
         prerelease: false
     - name: Upload release asset - Windows
+      if: matrix.os == 'windows-latest'
       id: upload_release_win
       uses: actions/upload-release-asset@v1
       env:
@@ -54,6 +55,7 @@ jobs:
         asset_name: voicechanger-win-x86_64.zip
         asset_content_type: application/zip
     - name: Upload release asset - macOS
+      if: matrix.os == 'macOS-latest'
       id: upload_release_macos
       uses: actions/upload-release-asset@v1
       env:
