@@ -17,6 +17,7 @@ High Quarity and Performance Voice Changer using WORLD Vocoder.
 ## Features
 
 - [x] Synthesize voice with WORLD
+- [x] Compressor, DC Offset Remover
 - [ ] Choose F0 Detector from DIO and CREPE
 - [x] Basic Buffering
 - [ ] Multi-threaded Synthesize and Buffering
@@ -25,7 +26,7 @@ High Quarity and Performance Voice Changer using WORLD Vocoder.
 - [ ] Tune Precision
 
 
-## Design (phase 1)
+## Current Design (phase 1)
 
 1. Sync stream to buffer
 2. Detect f0/formants/aperiodicity
@@ -35,7 +36,7 @@ High Quarity and Performance Voice Changer using WORLD Vocoder.
 6. Output signal
 
 
-## Design (phase 2)
+## Next-Gen Design (phase 2)
 
 - Params
     - WORLD_INBUF_SIZE: WORLD Processing buffer size likely 4096, 8192,..

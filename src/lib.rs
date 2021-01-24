@@ -262,7 +262,7 @@ impl Plugin for VoiceChange {
             name: "Voice Changer".to_string(),
             vendor: "sabamotto".to_string(),
             unique_id: 0x300001,
-            version: 101,
+            version: 102,
             category: Category::Effect,
 
             parameters: 4,
