@@ -4,6 +4,8 @@
 
 High Quarity and Performance Voice Changer using WORLD Vocoder.
 
+[Download latest](https://github.com/sabamotto/voicechange-rust-win/releases/latest)
+
 
 ## Dependencies
 
