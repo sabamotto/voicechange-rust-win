@@ -32,6 +32,8 @@ struct VoiceChange {
     params: Arc<VoiceChangeParameters>,
     source_buffer: VecDeque<f64>,
     compose_buffer: Vec<f64>,
+    dc_offset: f64,
+    comp_level: f64,
     notes: u8,
     pitch: u8,
 }
@@ -43,6 +45,8 @@ impl Default for VoiceChange {
             params: Arc::new(VoiceChangeParameters::default()),
             source_buffer: VecDeque::default(),
             compose_buffer: vec![0f64; COMPOSE_SIZE],
+            dc_offset: 0f64,
+            comp_level: 1f64,
             notes: 0,
             pitch: 0,
         }
@@ -142,21 +146,34 @@ impl VoiceChange {
 
         // synthesize voice
         let out = synthesis(&f0, &sp2, &ap, dio_option.frame_period, self.sample_rate);
+        let mut dc_offset = self.dc_offset;
+        let mut comp_level = self.comp_level;
         let dest: Vec<f64> = out[dest_idx..compose_idx]
             .iter()
             .enumerate()
             .map(|(i, y)| -> f64 {
-                if i < COMPOSE_SIZE {
+                // composing
+                let mut yout = if i < COMPOSE_SIZE {
                     let ratio = i as f64 / COMPOSE_SIZE as f64;
                     let prev_y = (1.0f64 - ratio) * self.compose_buffer[i];
                     let curr_y = ratio * *y;
-                    return prev_y + curr_y;
+                    prev_y + curr_y
                 } else {
-                    return *y;
-                }
+                    *y
+                };
+                // remove dc offset (easy-algo..)
+                // TODO: improve dc cutter
+                dc_offset = 0.98 * dc_offset + 0.02 * yout;
+                yout = yout - dc_offset;
+                // compressor (likely hard limitter)
+                comp_level = f64::min(0.1f64 + 0.9f64 * comp_level, 1f64 / yout.abs());
+                yout *= comp_level;
+                return yout;
             })
             .collect();
         self.compose_buffer = out[compose_idx..out.len()].iter().cloned().collect();
+        self.dc_offset = dc_offset;
+        self.comp_level = comp_level;
         return dest;
     }
 }
