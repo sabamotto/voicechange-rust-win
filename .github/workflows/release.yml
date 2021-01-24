@@ -20,9 +20,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          name: Release ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
 
   build:
     name: Build and Upload zip
