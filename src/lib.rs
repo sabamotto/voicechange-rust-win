@@ -204,10 +204,10 @@ impl PluginParameters for VoiceChangeParameters {
 impl Plugin for VoiceChange {
     fn get_info(&self) -> Info {
         Info {
-            name: "VoiceChange".to_string(),
+            name: "Voice Changer".to_string(),
             vendor: "sabamotto".to_string(),
             unique_id: 0x300001,
-            version: 200,
+            version: 100,
             category: Category::Effect,
 
             parameters: 4,
