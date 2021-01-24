@@ -20,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Avoid git fetch failure bug in rust
+      run: ssh-add -K ~/.ssh/id_rsa
     - name: Build
       run: cargo build --verbose
     - name: Run tests
