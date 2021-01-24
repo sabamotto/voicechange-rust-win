@@ -1,5 +1,7 @@
 # VoiceChanger for Rust Impl
 
+![Regression](https://github.com/sabamotto/voicechange-rust-win/workflows/Regression/badge.svg)
+
 High Quarity and Performance Voice Changer using WORLD Vocoder.
 
 
