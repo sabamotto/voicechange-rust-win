@@ -1,6 +1,6 @@
 [package]
 name = "voicechange-rust-win"
-version = "1.0.2"
+version = "1.0.3"
 authors = ["Saba Motto <sabapotcom@yahoo.co.jp>"]
 edition = "2018"
 
