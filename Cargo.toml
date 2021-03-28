@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 vst = "^0.2.1"
 rand = "^0.8.2"
-Rust-WORLD = {git = "https://github.com/sabamotto/Rust-WORLD.git", branch = "feature/update-world"}
+rust-world = {git = "https://github.com/sabamotto/Rust-WORLD.git"}
 
 [lib]
 name = "voicechanger"

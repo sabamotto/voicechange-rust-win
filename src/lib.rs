@@ -13,8 +13,8 @@ use vst::buffer::AudioBuffer;
 use vst::event::Event;
 use vst::plugin::{CanDo, Category, Info, Plugin, PluginParameters};
 
-use Rust_WORLD::rsworld::{cheaptrick, d4c, dio, stonemask, synthesis};
-use Rust_WORLD::rsworld_sys::{CheapTrickOption, D4COption, DioOption};
+use rust_world::rsworld::{cheaptrick, d4c, dio, stonemask, synthesis};
+use rust_world::rsworld_sys::{D4COption, DioOption};
 
 const BUFFER_SIZE: usize = 1024 * 16;
 const COMPOSE_SIZE: usize = 1024;
@@ -76,8 +76,9 @@ impl VoiceChange {
     fn stream_process(&mut self, samples: usize, input: Vec<f64>) -> Vec<f64> {
         // Fetch parameters
         let f0_rate = self.params.get_f0_rate();
-        let f0_sqr_rate = self.params.get_f0_exp();
+        let f0_exp = self.params.get_f0_exp();
         let sp_rate = self.params.get_sp_rate();
+        let sp_exp = self.params.get_sp_exp();
         let sp_limit = self.params.get_sp_limit();
         let pitch_freq = if self.notes == 0 {
             0.0
@@ -103,13 +104,33 @@ impl VoiceChange {
 
         // Analyze voice features
         let x: Vec<f64> = self.source_buffer.iter().cloned().collect();
-        let dio_option = DioOption::new();
+        let mut dio_option = DioOption::new();
+        dio_option.f0_floor = 50.0;
+        dio_option.f0_ceil = 200.0;
+        dio_option.speed = 20;
+        dio_option.allowed_range = 0.2;
         let (tpos, f0) = dio(&x, self.sample_rate, &dio_option);
         let mut f0 = stonemask(&x, self.sample_rate, &tpos, &f0);
-        let mut ct_option = CheapTrickOption::new(self.sample_rate);
-        let sp = cheaptrick(&x, self.sample_rate, &tpos, &f0, &mut ct_option);
+        // let mut ct_option = CheapTrickOption::new(self.sample_rate);
+        // ct_option.fft_size = 4096;
+        let sp = cheaptrick(
+            &x,
+            self.sample_rate,
+            &tpos,
+            &f0,
+            Option::Some(50f64),
+            Option::None,
+        );
         let d4c_option = D4COption::new();
-        let ap = d4c(&x, self.sample_rate, &tpos, &f0, &d4c_option);
+        let ap = d4c(
+            &x,
+            self.sample_rate,
+            &tpos,
+            &f0,
+            Option::Some(50f64),
+            Option::None,
+            &d4c_option,
+        );
 
         // self.params.debug.set((f0[0] * 0.0001) as f32);
 
@@ -120,7 +141,7 @@ impl VoiceChange {
                 pitch_freq
             } else {
                 if *fi > 100.0 {
-                    last_freq = ((*fi - 100.0).powf(f0_sqr_rate) + 100.0) * f0_rate;
+                    last_freq = ((*fi - 100.0).powf(f0_exp) + 100.0) * f0_rate;
                 }
                 last_freq
             };
@@ -134,11 +155,13 @@ impl VoiceChange {
                 frm.iter()
                     .enumerate()
                     .map(|(f, elem)| -> f64 {
+                        // let vc_rate = vc_table::SP_RATE[f];
+                        let vc_rate = 1f64;
                         if f < sp_range && f < sp_limit {
                             // warn: conv_size is 0, so linear interpolating
-                            sinc::interpolate(frm, f as f64 / sp_rate, 0f64)
+                            vc_rate * sinc::interpolate(frm, f as f64 / sp_rate, 0f64).powf(sp_exp)
                         } else {
-                            *elem
+                            vc_rate * (*elem).powf(sp_exp)
                         }
                     })
                     .collect()
@@ -204,6 +227,7 @@ struct VoiceChangeParameters {
     f0_rate: vst::util::AtomicFloat,
     sp_rate: vst::util::AtomicFloat,
     sp_limit: vst::util::AtomicFloat,
+    sp_exp: vst::util::AtomicFloat,
     f0_exp: vst::util::AtomicFloat,
 }
 
@@ -217,6 +241,9 @@ impl VoiceChangeParameters {
     fn get_sp_limit(&self) -> f64 {
         self.sp_limit.get() as f64
     }
+    fn get_sp_exp(&self) -> f64 {
+        0.9f64 + 0.2f64 * self.sp_exp.get() as f64
+    }
     fn get_f0_exp(&self) -> f64 {
         (0.4 * self.f0_exp.get() + 0.8) as f64
     }
@@ -229,6 +256,7 @@ impl Default for VoiceChangeParameters {
             f0_rate: vst::util::AtomicFloat::new(0.5),
             sp_rate: vst::util::AtomicFloat::new(0.25),
             sp_limit: vst::util::AtomicFloat::new(1.0),
+            sp_exp: vst::util::AtomicFloat::new(0.5),
             f0_exp: vst::util::AtomicFloat::new(0.5),
         }
     }
@@ -239,8 +267,8 @@ impl PluginParameters for VoiceChangeParameters {
         match index {
             0 => "x".to_string(),
             1 => "x".to_string(),
-            2 => "x".to_string(),
             3 => "x".to_string(),
+            4 => "x".to_string(),
             _ => "".to_string(),
         }
     }
@@ -248,9 +276,10 @@ impl PluginParameters for VoiceChangeParameters {
         match index {
             0 => format!("{:.3}", self.gain.get()),
             1 => format!("{:.3}", self.get_f0_rate()),
-            2 => format!("{:.3}", self.get_sp_rate()),
-            3 => format!("{:.3}", self.get_sp_limit()),
-            4 => format!("{:.3}", self.get_f0_exp()),
+            2 => format!("{:.3}", self.get_f0_exp()),
+            3 => format!("{:.3}", self.get_sp_rate()),
+            4 => format!("{:.3}", self.get_sp_exp()),
+            5 => format!("{:.3}", self.get_sp_limit()),
             _ => format!(""),
         }
     }
@@ -258,9 +287,10 @@ impl PluginParameters for VoiceChangeParameters {
         match index {
             0 => "Output Gain".to_string(),
             1 => "Pitch Shift".to_string(),
-            2 => "Formant Shift".to_string(),
-            3 => "Formant Effective Range".to_string(),
-            4 => "Intonation".to_string(),
+            2 => "Pitch Intonation".to_string(),
+            3 => "Formant Shift".to_string(),
+            4 => "Formant Scale".to_string(),
+            5 => "Formant Effective Range".to_string(),
             _ => "".to_string(),
         }
     }
@@ -268,9 +298,10 @@ impl PluginParameters for VoiceChangeParameters {
         match index {
             0 => self.gain.get(),
             1 => self.f0_rate.get(),
-            2 => self.sp_rate.get(),
-            3 => self.sp_limit.get(),
-            4 => self.f0_exp.get(),
+            2 => self.f0_exp.get(),
+            3 => self.sp_rate.get(),
+            4 => self.sp_exp.get(),
+            5 => self.sp_limit.get(),
             _ => 0.0,
         }
     }
@@ -278,9 +309,10 @@ impl PluginParameters for VoiceChangeParameters {
         match index {
             0 => self.gain.set(value),
             1 => self.f0_rate.set(value),
-            2 => self.sp_rate.set(value),
-            3 => self.sp_limit.set(value),
-            4 => self.f0_exp.set(value),
+            2 => self.f0_exp.set(value),
+            3 => self.sp_rate.set(value),
+            4 => self.sp_exp.set(value),
+            5 => self.sp_limit.set(value),
             _ => (),
         }
     }
@@ -295,7 +327,7 @@ impl Plugin for VoiceChange {
             version: 102,
             category: Category::Effect,
 
-            parameters: 5,
+            parameters: 6,
             inputs: 1,
             outputs: 1,
             f64_precision: true,
