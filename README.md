@@ -60,6 +60,12 @@ High Quarity and Performance Voice Changer using WORLD Vocoder.
     7. Push dest signal to queue
     8. SAFETY: Drop overflow dest queue
 
+
+## License
+
+See [LICENSE](./LICENSE).
+
+
 ## Author
 
 &copy; 2021 sabamotto.
